@@ -18,10 +18,15 @@ if( $args[0] == 'plugin' && $args[1] == 'cratesplus' ) {
 		$auth_mode = isset( $data->auth_mode ) ? mysqli_real_escape_string( $conn, $data->auth_mode ) : '';
 		$java_version = isset( $data->java_version ) ? mysqli_real_escape_string( $conn, $data->java_version ) : '';
 		$remote_ip = isset( $_SERVER['REMOTE_ADDR'] ) ? mysqli_real_escape_string( $conn, $_SERVER['REMOTE_ADDR'] ) : '';
+		$date = date( 'Y-m-d H:i:s' );
 		
-		$sql = 'INSERT INTO `stats_cratesplus` ( `guid`, `plugin_version`, `server_version`, `players_online`, `osname`, `osarch`, `osversion`, `cores`, `auth_mode`, `java_version`, `remote_ip` ) VALUE ( "' . $guid . '", "' . $plugin_version . '", "' . $server_version . '", "' . $players_online . '", "' . $osname . '", "' . $osarch . '", "' . $osversion . '", "' . $cores . '", "' . $auth_mode . '", "' . $java_version . '", "' . $remote_ip . '" );';
+		$sql = 'INSERT INTO `stats_cratesplus` ( `date`, `guid`, `plugin_version`, `server_version`, `players_online`, `osname`, `osarch`, `osversion`, `cores`, `auth_mode`, `java_version`, `remote_ip` ) VALUE ( "' . $date . '", "' . $guid . '", "' . $plugin_version . '", "' . $server_version . '", "' . $players_online . '", "' . $osname . '", "' . $osarch . '", "' . $osversion . '", "' . $cores . '", "' . $auth_mode . '", "' . $java_version . '", "' . $remote_ip . '" );';
 		$conn->query( $sql );
 		echo '1';
+	} else {
+		echo '7,Failed to parse data';
 	}
 	
+} else {
+	header( 'Location: https://mcstats.xyz', true, 302 );
 }
