@@ -1,9 +1,16 @@
 <?php
 require_once( 'db.php' ); // Gives us $conn
+require_once( 'functions.php' ); // Gives us some useful functions
 
 $path = ! empty( $_GET['path'] ) ? strtolower( $_GET['path'] ) : '';
 $args = explode( '/', $path );
-if( $args[0] == 'plugin' && $args[1] == 'cratesplus' ) {
+if( $args[0] == 'plugin' ) {
+    
+    $plugin = $args[1];
+    
+    if( ! does_table_exist( $conn, 'stats_' . $plugin ) ) {
+        clone_table_structure( $conn, 'template', 'stats_' . $plugin );
+    }
 
 	$data = json_decode( gzdecode( file_get_contents('php://input') ) );
 	if( ! empty( $data ) ) {
@@ -20,7 +27,7 @@ if( $args[0] == 'plugin' && $args[1] == 'cratesplus' ) {
 		$remote_ip = isset( $_SERVER['REMOTE_ADDR'] ) ? mysqli_real_escape_string( $conn, $_SERVER['REMOTE_ADDR'] ) : '';
 		$date = date( 'Y-m-d H:i:s' );
 		
-		$sql = 'INSERT INTO `stats_cratesplus` ( `date`, `guid`, `plugin_version`, `server_version`, `players_online`, `osname`, `osarch`, `osversion`, `cores`, `auth_mode`, `java_version`, `remote_ip` ) VALUE ( "' . $date . '", "' . $guid . '", "' . $plugin_version . '", "' . $server_version . '", "' . $players_online . '", "' . $osname . '", "' . $osarch . '", "' . $osversion . '", "' . $cores . '", "' . $auth_mode . '", "' . $java_version . '", "' . $remote_ip . '" );';
+		$sql = 'INSERT INTO `stats_' . $plugin . '` ( `date`, `guid`, `plugin_version`, `server_version`, `players_online`, `osname`, `osarch`, `osversion`, `cores`, `auth_mode`, `java_version`, `remote_ip` ) VALUE ( "' . $date . '", "' . $guid . '", "' . $plugin_version . '", "' . $server_version . '", "' . $players_online . '", "' . $osname . '", "' . $osarch . '", "' . $osversion . '", "' . $cores . '", "' . $auth_mode . '", "' . $java_version . '", "' . $remote_ip . '" );';
 		$conn->query( $sql );
 		echo '1';
 	} else {
@@ -28,5 +35,36 @@ if( $args[0] == 'plugin' && $args[1] == 'cratesplus' ) {
 	}
 	
 } else {
-	header( 'Location: https://mcstats.xyz', true, 302 );
+    
+    switch( strtolower( ! empty( $args[0] ) ? $args[0] : '' ) ) {
+        default:
+            output_to_json( array( 'success' => false, 'error' => 'Unknown API version' ) );
+            break;
+            
+        case 'v1':
+            array_shift( $args );
+
+            switch( strtolower( ! empty( $args[0] ) ? $args[0] : '' ) ) {
+                default:
+                    output_to_json( array( 'success' => false, 'error' => 'Unknown method' ) );
+                    break;
+                    
+                case 'stats':
+                    $row_count = 0;
+                    $row_count_result = $conn->query( 'SELECT SUM(TABLE_ROWS) as Rows FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = "connorli_mcstats";' );
+                    if( $row_count_result->num_rows == 1 ) {
+                        while( $row = $row_count_result->fetch_assoc() ) {
+                            $row_count = $row['Rows'];
+                        }
+                    }
+                    output_to_json( array( 'success' => true, 'rows' => $row_count, 'uptime' => get_uptime(), 'db_connections' => get_open_connections( $conn ), 'db_size' => get_database_size( $conn ) . 'MB', 'servers' => get_servers_count( $conn ) ) );
+                    break;
+            }
+            
+            break;
+        
+    }
+    
+    
+	//header( 'Location: https://mcstats.xyz', true, 302 );
 }
